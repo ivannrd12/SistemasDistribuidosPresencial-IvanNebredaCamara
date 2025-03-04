@@ -1,5 +1,8 @@
 package es.ubu.lsi.client;
 
+import java.io.*;
+import java.net.*;
+
 import es.ubu.lsi.common.ChatMessage;
 
 /**
@@ -27,7 +30,23 @@ public class ChatClientImpl implements ChatClient {
     }
     
 	public boolean start() {
-		// TODO Auto-generated method stub
+		
+		try {
+			
+			Socket socket = new Socket(server, port);
+			OutputStream os = socket.getOutputStream();
+			ObjectOutputStream outputStream = new ObjectOutputStream(os);
+			
+			
+		} catch (IOException e) {
+			
+			System.err.println("Error en el cliente");
+		}
+		
+		
+		
+		
+		
 		return false;
 	}
 
