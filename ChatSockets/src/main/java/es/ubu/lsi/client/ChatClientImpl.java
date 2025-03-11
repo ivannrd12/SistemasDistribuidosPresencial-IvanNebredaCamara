@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 
 import es.ubu.lsi.common.ChatMessage;
+import es.ubu.lsi.common.ChatMessage.MessageType;
 
 /**
  * Implementación del cliente de chat basado en sockets TCP.
@@ -35,23 +36,24 @@ public class ChatClientImpl implements ChatClient {
 		
 		try {
 			
+			// Conectar al servidor en el puerto 1500
 			socket = new Socket(server, port);
 			outputStream = new ObjectOutputStream(socket.getOutputStream());
+			ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
 			
-			// 3. Iniciar el hilo de escucha de mensajes
+			// Recibir el ID asignado por el servidor
+            this.id = inputStream.readInt();
+            System.out.println("Conectado al servidor como " + username + " (ID: " + id + ")");
+			
+			// Iniciar el hilo de escucha de mensajes
 	        new Thread(new ChatClientListener()).start();
 	        
-	        System.out.println("Conectado al servidor como " + username);
             return true;
 	        
 		} catch (IOException e) {
 			
 			System.err.println("Error al conectar con el servidor: " + e.getMessage());
 		}
-		
-		
-		
-		
 		
 		return false;
 	}
@@ -79,7 +81,15 @@ public class ChatClientImpl implements ChatClient {
 		
 		try {
 			
-			if (socket != null) {
+			if (outputStream  != null) {
+				
+				// Enviar mensaje de LOGOUT al servidor antes de cerrar
+				ChatMessage logoutMessage = new ChatMessage(id, MessageType.LOGOUT, "logout");
+				sendMessage(logoutMessage);
+				
+			}
+			
+			if (socket  != null) {
 				
 				socket.close();
 				System.out.println("Desconectado del chat.");
@@ -101,6 +111,19 @@ public class ChatClientImpl implements ChatClient {
 		
 		public void run() {
 			
+			try (ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream())){
+				
+				while (carryOn) {
+					
+					 ChatMessage msg = (ChatMessage) inputStream.readObject();
+	                 System.out.println(msg.getId() + ": " + msg.getMessage());
+				}
+				
+				
+			} catch (IOException | ClassNotFoundException e) {
+				
+				 System.err.println("Desconectado del servidor.");
+	        }
 			
 		}
 	}
