@@ -15,6 +15,8 @@ public class ChatClientImpl implements ChatClient {
     private int port;
     private Boolean carryOn = true;
     private int id;
+    private Socket socket;
+    private ObjectOutputStream  outputStream;
 	
     /**
      * Constructor del cliente de chat.
@@ -33,14 +35,18 @@ public class ChatClientImpl implements ChatClient {
 		
 		try {
 			
-			Socket socket = new Socket(server, port);
-			OutputStream os = socket.getOutputStream();
-			ObjectOutputStream outputStream = new ObjectOutputStream(os);
+			socket = new Socket(server, port);
+			outputStream = new ObjectOutputStream(socket.getOutputStream());
 			
-			
+			// 3. Iniciar el hilo de escucha de mensajes
+	        new Thread(new ChatClientListener()).start();
+	        
+	        System.out.println("Conectado al servidor como " + username);
+            return true;
+	        
 		} catch (IOException e) {
 			
-			System.err.println("Error en el cliente");
+			System.err.println("Error al conectar con el servidor: " + e.getMessage());
 		}
 		
 		
@@ -51,20 +57,48 @@ public class ChatClientImpl implements ChatClient {
 	}
 
 	public void sendMessage(ChatMessage msg) {
-		// TODO Auto-generated method stub
 		
+		try {
+			
+			if (outputStream != null) {
+				
+				outputStream.writeObject(msg);
+				outputStream.flush();
+			}
+			
+			
+		} catch (IOException e) {
+			
+			System.err.println("Error al enviar mensaje: " + e.getMessage());
+		}
 	}
 
 	public void disconnect() {
-		// TODO Auto-generated method stub
+	
+		carryOn = false;
 		
-	}
+		try {
+			
+			if (socket != null) {
+				
+				socket.close();
+				System.out.println("Desconectado del chat.");
+			}
+			
+			
+		} catch (IOException e) {
+			
+			System.err.println("Error al cerrar la conexión: " + e.getMessage());
+        }
+		}
+		 
+	
 	
 	/**
      * Clase interna que maneja la escucha de mensajes del servidor.
      */
 	private class ChatClientListener implements Runnable {
-
+		
 		public void run() {
 			
 			
