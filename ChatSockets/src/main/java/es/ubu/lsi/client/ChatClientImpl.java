@@ -2,6 +2,7 @@ package es.ubu.lsi.client;
 
 import java.io.*;
 import java.net.*;
+import java.util.Scanner;
 
 import es.ubu.lsi.common.ChatMessage;
 import es.ubu.lsi.common.ChatMessage.MessageType;
@@ -133,7 +134,36 @@ public class ChatClientImpl implements ChatClient {
      */
 	public static void main(String[] args) {
 		
+		if (args.length < 2) {
+			System.out.println("Uso: java es.ubu.lsi.client.ChatClientImpl <servidor> <nickname>");
+	        return;
+		}
 		
+		String server = args[0];
+	    String username = args[1];
+	    int port = 1500;
+	    
+	    ChatClientImpl client = new ChatClientImpl(server,port,username);
+	    
+	    if (client.start()) {
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Cliente conectado. Escriba mensajes para enviar. Escriba 'logout' para salir.");
+            
+            while (client.carryOn) {
+                String msg = scanner.nextLine();
+                if (msg.equalsIgnoreCase("logout")) {
+                    client.disconnect();
+                    break;
+                }
+                
+                // Crear mensaje con el tipo adecuado y enviarlo
+                ChatMessage chatMessage = new ChatMessage(client.id, MessageType.MESSAGE,msg);
+                client.sendMessage(chatMessage);
+            }
+            
+            scanner.close();
+	    }
+
 	}
 		
 		
