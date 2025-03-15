@@ -26,6 +26,7 @@ public class ChatServerImpl implements ChatServer {
 	private ServerSocket serverSocket;
 	private final Map<Integer, ServerThreadForClient> clients = new ConcurrentHashMap<>();
 	
+	
 	/**
      * Constructor del servidor de chat.
      * @param port Puerto en el que se ejecutará el servidor.
