@@ -102,7 +102,14 @@ public class ChatClientImpl implements ChatClient {
 			System.err.println("Error al cerrar la conexión: " + e.getMessage());
         }
 		}
-		 
+		
+	public ObjectInputStream getInputStream() {
+	    return inputStream;
+	}
+
+	public ObjectOutputStream getOutputStream() {
+	    return outputStream;
+	}
 	
 	
 	/**
