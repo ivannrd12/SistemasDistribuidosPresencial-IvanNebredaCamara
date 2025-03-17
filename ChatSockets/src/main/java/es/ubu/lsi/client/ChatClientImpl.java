@@ -2,7 +2,9 @@ package es.ubu.lsi.client;
 
 import java.io.*;
 import java.net.*;
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 
 import es.ubu.lsi.common.ChatMessage;
 import es.ubu.lsi.common.ChatMessage.MessageType;
@@ -21,6 +23,7 @@ public class ChatClientImpl implements ChatClient {
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
     private boolean isConfigured = false; // Indica si el cliente está listo
+    private Set<String> blockedUsers = new HashSet<>();
 	
     /**
      * Constructor del cliente de chat.
@@ -62,7 +65,7 @@ public class ChatClientImpl implements ChatClient {
 	        
 		} catch (IOException | InterruptedException e) {
 			
-			System.err.println("Error al conectar con el servidor: " + e.getMessage());
+			System.err.println("[ERR] Error al conectar con el servidor: " + e.getMessage());
 		}
 		
 		return false;
@@ -81,7 +84,7 @@ public class ChatClientImpl implements ChatClient {
 			
 		} catch (IOException e) {
 			
-			System.err.println("Error al enviar mensaje: " + e.getMessage());
+			System.err.println("[ERR] Error al enviar mensaje: " + e.getMessage());
 		}
 	}
 
@@ -108,7 +111,7 @@ public class ChatClientImpl implements ChatClient {
 			
 		} catch (IOException e) {
 			
-			System.err.println("Error al cerrar la conexión: " + e.getMessage());
+			System.err.println("[ERR] Error al cerrar la conexión: " + e.getMessage());
         }
 		}
 			
@@ -135,21 +138,76 @@ public class ChatClientImpl implements ChatClient {
 				while (carryOn) {
 					
 					ChatMessage msg = (ChatMessage) inputStream.readObject();
-					synchronized (System.out) {	// Bloquear la impresión para evitar superposición
-						
-						System.out.println(msg.getId() + ": " + msg.getMessage());
+					
+					// Manejar el apagado del servidor
+	                if (msg.getType() == ChatMessage.MessageType.SHUTDOWN) {
+	                    System.out.println("[SERVIDOR] " + msg.getMessage());
+	                    System.out.println("Desconectando...");
+	                    System.exit(0);  // Salir del programa
 	                }
 					
+					// Extraer el nombre del usuario del mensaje
+	                String[] parts = msg.getMessage().split(":", 2);
+	                if (parts.length < 2) continue;  // Mensaje mal formateado
+	                
+	                String senderUsername = parts[0].trim();
+
+					
+					// Verificar si el mensaje viene de un usuario bloqueado
+	                if (blockedUsers.contains(senderUsername)) {
+	                    continue; // Ignorar el mensaje si el usuario está bloqueado
+	                }
+					
+					synchronized (System.out) {	// Bloquear la impresión para evitar superposición
+						
+						System.out.println(msg.getMessage());
+						
+	                }
 					
 				}
-				
-				
+					
 			} catch (IOException | ClassNotFoundException e) {
 				
-				 System.err.println("Desconectado del servidor.");
+				 System.err.println("[ERR] Desconectado del servidor.");
+				 System.exit(0);  // Salir del programa
 	        }
 			
 		}
+	}
+	
+	public void banUser(String username) {
+		
+	    if (!blockedUsers.contains(username)) {
+	        blockedUsers.add(username);
+	        System.out.println(username + " ha sido bloqueado.");
+	        
+	        // Enviar mensaje al servidor notificando el baneo
+	        ChatMessage banMessage = new ChatMessage(this.id, ChatMessage.MessageType.MESSAGE, 
+	                this.username + " ha bloqueado a " + username);
+	        sendMessage(banMessage);
+	        
+	    } else {
+	    	
+	        System.out.println(username + " ya está bloqueado.");
+	    }
+	    
+	}
+	
+	public void unbanUser(String username) {
+	    if (blockedUsers.contains(username)) {
+	        blockedUsers.remove(username);
+	        System.out.println(username + " ha sido desbloqueado.");
+	        
+	        // Enviar mensaje al servidor notificando el desbloqueo
+	        ChatMessage unbanMessage = new ChatMessage(this.id, ChatMessage.MessageType.MESSAGE, 
+	                this.username + " ha desbloqueado a " + username);
+	        sendMessage(unbanMessage);
+	        
+	    } else {
+	    	
+	        System.out.println(username + " no está en la lista de bloqueados.");
+	    }
+	    
 	}
 	
 	/**
@@ -181,8 +239,21 @@ public class ChatClientImpl implements ChatClient {
             	System.out.print("> ");
                 String msg = scanner.nextLine();
                 if (msg.equalsIgnoreCase("logout")) {
+                	
                     client.disconnect();
                     break;
+                    
+                } else if (msg.startsWith("ban ")) {
+                	
+                	String userToBan = msg.substring(4).trim();
+                	client.banUser(userToBan);
+                    continue;
+                    
+                } else if (msg.startsWith("unban ")) {
+                	
+                	String userToUnban = msg.substring(6).trim();
+                	client.unbanUser(userToUnban);
+                    continue;
                 }
                 
                 // Crear mensaje con el tipo adecuado y enviarlo

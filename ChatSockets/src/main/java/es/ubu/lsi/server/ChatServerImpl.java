@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
 import es.ubu.lsi.client.ChatClientImpl;
@@ -26,6 +27,7 @@ public class ChatServerImpl implements ChatServer {
 	private ServerSocket serverSocket;
 	private Socket clientSocket;
 	private final Map<Integer, ServerThreadForClient> clients = new ConcurrentHashMap<>();
+	private final Map<Integer, String> clientUsernames = new ConcurrentHashMap<>();
 	
 	
 	/**
@@ -42,42 +44,38 @@ public class ChatServerImpl implements ChatServer {
 	
 	@Override
 	public void startup() {
+		
 		try {
 			
 			// Crear el servidor de sockets en el puerto 1500
 	        serverSocket = new ServerSocket(DEFAULT_PORT);
-	        System.out.println("Servidor iniciado en el puerto " + DEFAULT_PORT);
+	        System.out.println("[LOG] Servidor iniciado en el puerto " + DEFAULT_PORT);
+	        //Añadimos el usuario -1 que es el servidor para el shutdown
+	        clientUsernames.put(-1,"localhost");
 	        
 	        // Bucle principal para aceptar clientes
 	        while (alive) {
 	        	
-	        	//try {
-	        		
-	        		// Aceptar nueva conexión
-	                clientSocket = serverSocket.accept();
-	                
-	                // Asignar un ID único al cliente
-	                //int assignedId = ++clientId;
-	        		
-	                // Crear y lanzar el hilo para gestionar al cliente
-	                ServerThreadForClient clientThread = new ServerThreadForClient();
-	                new Thread(clientThread).start();
-	                
-	                //System.out.println("Nuevo cliente conectado con ID: " + assignedId);
-	        		
-	        	//} catch (IOException e) {
-	        		
-	        		//if (alive) {
-	                  //  System.err.println("Error aceptando conexión: " + e.getMessage());
-	                //}
-	        		
-	        	//}
+	        	// Verificar si el servidor sigue activo antes de aceptar conexiones
+	        	if (!alive) break;
+	        	// Aceptar nueva conexión
+	        	clientSocket = serverSocket.accept();
 	        	
+	        	if (!alive) break;
+	                      		
+	        	// Crear y lanzar el hilo para gestionar al cliente
+	        	ServerThreadForClient clientThread = new ServerThreadForClient();
+	        	new Thread(clientThread).start();
+	                
 	        }
 			
 		} catch (IOException e) {
 			
-			System.err.println("Error iniciando el servidor: " + e.getMessage());
+			if (alive) {
+				
+                System.err.println("[ERR] Error aceptando conexión: " + e.getMessage());
+            }
+			
 		}
 		
 	}
@@ -90,13 +88,14 @@ public class ChatServerImpl implements ChatServer {
 		try {
 			
 			// Notificar a todos los clientes conectados sobre el apagado del servidor
-			ChatMessage shutdownMessage = new ChatMessage(-1, ChatMessage.MessageType.SHUTDOWN, "El servidor se está apagando...");
+			ChatMessage shutdownMessage = new ChatMessage(-1, ChatMessage.MessageType.SHUTDOWN,"El servidor se está apagando...");
 		    broadcast(shutdownMessage);
 		    
 		    // Cerrar todas las conexiones activas
-		    for (Integer id : new ArrayList<>(clients.keySet())) {
+		    for (ServerThreadForClient client : new ArrayList<>(clients.values())) {
 		    	
-		    	remove(id);
+	            client.interrupt();  // Matar el hilo del cliente
+	            remove(client.id);  // Eliminar cliente del mapa
 	        }
 	        clients.clear(); // Limpiar la lista de clientes
 	        
@@ -105,11 +104,15 @@ public class ChatServerImpl implements ChatServer {
 	            serverSocket.close();
 	        }
 	        
-	        System.out.println("Servidor apagado correctamente.");
+	        if (clientSocket != null) {
+	        	clientSocket.close();
+	        }
+	        
+	        System.out.println("[LOG] Servidor apagado correctamente.");
 		    
 		} catch (IOException e) {
 			
-			 System.err.println("Error al apagar el servidor: " + e.getMessage());
+			 System.err.println("[ERR] Error al apagar el servidor: " + e.getMessage());
 		}
 		
 	}
@@ -117,16 +120,20 @@ public class ChatServerImpl implements ChatServer {
 	@Override
 	public void broadcast(ChatMessage message) {
 		
+		String senderUsername = clientUsernames.get(message.getId());
+	    String formattedMessage = senderUsername + ": " + message.getMessage();
+	    ChatMessage newMessage = new ChatMessage(message.getId(), message.getType(), formattedMessage);
+		
 		for (ServerThreadForClient client : clients.values()) {
 			
 			try {
 				
-				client.outputStream.writeObject(message);
+				client.outputStream.writeObject(newMessage);
 	            client.outputStream.flush();
 	            
 			} catch (IOException e) {
 				
-				System.err.println("Error al enviar mensaje a " + client.username);
+				System.err.println("[ERR] Error al enviar mensaje a " + client.username);
 			}
 			
 	    }
@@ -145,11 +152,11 @@ public class ChatServerImpl implements ChatServer {
 				if (client.inputStream != null) client.inputStream.close();
 	            if (client.outputStream != null) client.outputStream.close();
 	            
-	            System.out.println("Cliente con ID " + id + " eliminado del servidor y conexión cerrada.");
+	            System.out.println("[LOG] Cliente con ID " + id + " eliminado del servidor y conexión cerrada.");
 				
 			} catch (IOException e) {
 				
-				 System.err.println("Error al cerrar conexión con el cliente " + id);
+				 System.err.println("[ERR] Error al cerrar conexión con el cliente " + id);
 			}
 			
 		}
@@ -186,41 +193,54 @@ public class ChatServerImpl implements ChatServer {
 	            clients.put(clientId,this);
 	            ++clientId;
 	            
-	            ChatMessage message;
+	            ChatMessage msg;
 	            
 	            // Recibir el primer mensaje con el nombre del usuario
 	            ChatMessage firstMessage = (ChatMessage) inputStream.readObject();
 	            this.username = firstMessage.getMessage();
+	            clientUsernames.put(id,username);
 	            
 	            
 	            
 	            
-	            System.out.println("Cliente " + username + " conectado con ID: " + id);
+	            System.out.println("[LOG] Cliente " + username + " conectado con ID: " + id);
 
 	            
-	            while (true) {
+	            while (alive) {
 	            	
 	            	// Leer el mensaje del cliente
-	                message = (ChatMessage) inputStream.readObject();
+	                msg = (ChatMessage) inputStream.readObject();
 	                
 	                // Si el cliente envía LOGOUT, eliminarlo y cerrar su conexión
-	                if (message.getType() == ChatMessage.MessageType.LOGOUT) {
+	                if (msg.getType() == ChatMessage.MessageType.LOGOUT || !alive) {
 	                	
-	                	System.out.println("Cliente " + username + " se ha desconectado.");
+	                	System.out.println("[LOG] Cliente " + username + " se ha desconectado.");
 	                    remove(id);
 	                    break;
+	                    
+	                } else if (msg.getMessage().contains("ha bloquedo a") || msg.getMessage().contains("ha desbloquedo a")) {
+	                	
+	                	System.out.println("[LOG] " + msg.getMessage());
+	                	continue;
 	                }
 	                
 	                // Si es un mensaje normal, enviarlo a todos los clientes
-	                System.out.println(username + ": " + message.getMessage());
-	                broadcast(message);
+	                System.out.println(username + ": " + msg.getMessage());
+	                broadcast(msg);
 	                
 	            }
 				
 			} catch (IOException | ClassNotFoundException e) {
 				
-				System.err.println("Error en la comunicación con " + username);
+				if (alive) {
+					
+		            System.err.println("[ERR] Error en la comunicación con " + username);
+		        }
 				
+				
+			} finally {
+				
+				remove(id);
 			}
 		}
 		
@@ -228,8 +248,31 @@ public class ChatServerImpl implements ChatServer {
 	
 	public static void main(String[] args) {
 		
-		ChatServerImpl server = new ChatServerImpl(1500); // Instanciar el servidor
-		server.startup(); // Iniciar el servidor
+		final ChatServerImpl server = new ChatServerImpl(1500); // Instanciar el servidor
+		
+		// Iniciar el servidor en un hilo separado usando Runnable en Java 7
+	    Thread serverThread = new Thread(new Runnable() {
+	        @Override
+	        public void run() {
+	            server.startup();
+	        }
+	    });
+	    
+	    serverThread.start(); // Iniciar el servidor en un hilo separado
+
+		// Permitir apagar el servidor manualmente desde la consola
+	    Scanner scanner = new Scanner(System.in);
+	    System.out.println("Escribe 'shutdown' para apagar el servidor.");
+	    System.out.print("> ");
+	    while (scanner.hasNext()) {
+	        String command = scanner.nextLine();
+	        if (command.equalsIgnoreCase("shutdown")) {
+	            server.shutdown();
+	            break;
+	        }
+	    }
+	    
+	    scanner.close();
 	}
 
 }
