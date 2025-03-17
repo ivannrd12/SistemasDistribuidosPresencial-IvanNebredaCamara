@@ -24,6 +24,7 @@ public class ChatServerImpl implements ChatServer {
 	private int port;
 	private boolean alive;
 	private ServerSocket serverSocket;
+	private Socket clientSocket;
 	private final Map<Integer, ServerThreadForClient> clients = new ConcurrentHashMap<>();
 	
 	
@@ -34,6 +35,8 @@ public class ChatServerImpl implements ChatServer {
 	public ChatServerImpl(int port) {
 		
 		this.port = port;
+		this.alive = true;
+		this.clientId = 0;
 		
 	}
 	
@@ -43,34 +46,32 @@ public class ChatServerImpl implements ChatServer {
 			
 			// Crear el servidor de sockets en el puerto 1500
 	        serverSocket = new ServerSocket(DEFAULT_PORT);
-	        this.alive = true;
 	        System.out.println("Servidor iniciado en el puerto " + DEFAULT_PORT);
 	        
 	        // Bucle principal para aceptar clientes
 	        while (alive) {
 	        	
-	        	try {
+	        	//try {
 	        		
 	        		// Aceptar nueva conexión
-	                Socket clientSocket = serverSocket.accept();
+	                clientSocket = serverSocket.accept();
 	                
 	                // Asignar un ID único al cliente
-	                int assignedId = ++clientId;
-	                
+	                //int assignedId = ++clientId;
+	        		
 	                // Crear y lanzar el hilo para gestionar al cliente
 	                ServerThreadForClient clientThread = new ServerThreadForClient();
-	                clients.put(assignedId, clientThread);
 	                new Thread(clientThread).start();
 	                
-	                System.out.println("Nuevo cliente conectado con ID: " + assignedId);
+	                //System.out.println("Nuevo cliente conectado con ID: " + assignedId);
 	        		
-	        	} catch (IOException e) {
+	        	//} catch (IOException e) {
 	        		
-	        		if (alive) {
-	                    System.err.println("Error aceptando conexión: " + e.getMessage());
-	                }
+	        		//if (alive) {
+	                  //  System.err.println("Error aceptando conexión: " + e.getMessage());
+	                //}
 	        		
-	        	}
+	        	//}
 	        	
 	        }
 			
@@ -135,6 +136,7 @@ public class ChatServerImpl implements ChatServer {
 	public void remove(int id) {
 		
 		ServerThreadForClient client = clients.remove(id);
+		
 		if (client != null) {
 			
 			try {
@@ -142,6 +144,7 @@ public class ChatServerImpl implements ChatServer {
 				if (client.socket != null) client.socket.close();
 				if (client.inputStream != null) client.inputStream.close();
 	            if (client.outputStream != null) client.outputStream.close();
+	            
 	            System.out.println("Cliente con ID " + id + " eliminado del servidor y conexión cerrada.");
 				
 			} catch (IOException e) {
@@ -170,21 +173,27 @@ public class ChatServerImpl implements ChatServer {
 			try {
 				
 				// Obtener el socket del cliente aceptado por el servidor
-	            socket = serverSocket.accept();
-	            // Asignar un ID al cliente y crear la instancia de ChatClientImpl
-	            this.id = ++clientId;
-	            
-	            // Reutilizar los flujos de ChatClientImpl
+	            socket = clientSocket;
+	            // Asignar un ID al cliente
+	            this.id = clientId;
+	           
 	            outputStream = new ObjectOutputStream(socket.getOutputStream());
 	            inputStream = new ObjectInputStream(socket.getInputStream());
 	            
 	            // Enviar el ID al cliente
 	            outputStream.writeInt(id);
 	            outputStream.flush();
+	            clients.put(clientId,this);
+	            ++clientId;
+	            
+	            ChatMessage message;
 	            
 	            // Recibir el primer mensaje con el nombre del usuario
 	            ChatMessage firstMessage = (ChatMessage) inputStream.readObject();
 	            this.username = firstMessage.getMessage();
+	            
+	            
+	            
 	            
 	            System.out.println("Cliente " + username + " conectado con ID: " + id);
 
@@ -192,7 +201,7 @@ public class ChatServerImpl implements ChatServer {
 	            while (true) {
 	            	
 	            	// Leer el mensaje del cliente
-	                ChatMessage message = (ChatMessage) inputStream.readObject();
+	                message = (ChatMessage) inputStream.readObject();
 	                
 	                // Si el cliente envía LOGOUT, eliminarlo y cerrar su conexión
 	                if (message.getType() == ChatMessage.MessageType.LOGOUT) {
@@ -212,9 +221,6 @@ public class ChatServerImpl implements ChatServer {
 				
 				System.err.println("Error en la comunicación con " + username);
 				
-			} finally {
-				
-				remove(id);
 			}
 		}
 		
