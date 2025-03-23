@@ -10,19 +10,37 @@ import es.ubu.lsi.common.ChatMessage;
 import es.ubu.lsi.common.ChatMessage.MessageType;
 
 /**
- * Implementación del cliente de chat basado en sockets TCP.
+ * Implementación del cliente de un sistema de chat basado en sockets TCP.
+ * Se conecta al servidor, envía y recibe mensajes, y permite bloquear/desbloquear usuarios.
+ * 
+ * Gestiona un hilo para la escucha continua de mensajes del servidor.
+ * Utiliza flujos de entrada/salida con objetos Java serializados.
+ * 
+ * El cliente también permite comandos especiales como "logout", "ban" y "unban".
+ * 
+ * @author ...
  */
 public class ChatClientImpl implements ChatClient {
 	
+	/** Dirección IP o nombre del servidor. */
 	private String server;
+	/** Nombre de usuario del cliente. */
     private String username;
+    /** Puerto de conexión al servidor. */
     private int port;
+    /** Bandera para controlar si el cliente sigue activo. */
     private Boolean carryOn = true;
+    /** Identificador asignado por el servidor. */
     private int id;
+    /** Socket de conexión. */
     private Socket socket;
+    /** Flujo de salida para enviar mensajes al servidor. */
     private ObjectOutputStream outputStream;
+    /** Flujo de entrada para recibir mensajes del servidor. */
     private ObjectInputStream inputStream;
-    private boolean isConfigured = false; // Indica si el cliente está listo
+    /** Indica si el cliente está listo tras la configuración inicial. */
+    private boolean isConfigured = false;
+    /** Lista de usuarios bloqueados por el cliente. */
     private Set<String> blockedUsers = new HashSet<>();
 	
     /**
@@ -38,6 +56,11 @@ public class ChatClientImpl implements ChatClient {
     	this.username = username;
     }
     
+    /**
+     * Inicia la conexión con el servidor, configura los flujos y lanza el hilo de escucha.
+     * 
+     * @return true si la conexión se ha establecido correctamente, false en caso contrario.
+     */
 	public boolean start() {
 		
 		try {
@@ -71,6 +94,11 @@ public class ChatClientImpl implements ChatClient {
 		return false;
 	}
 
+	/**
+	 * Envía un mensaje al servidor.
+	 * 
+	 * @param msg Objeto ChatMessage que se desea enviar.
+	 */
 	public void sendMessage(ChatMessage msg) {
 		
 		try {
@@ -88,6 +116,9 @@ public class ChatClientImpl implements ChatClient {
 		}
 	}
 
+	/**
+	 * Desconecta el cliente del servidor y cierra todos los recursos.
+	 */
 	public void disconnect() {
 	
 		carryOn = false;
@@ -116,10 +147,15 @@ public class ChatClientImpl implements ChatClient {
 		}
 			
 	/**
-     * Clase interna que maneja la escucha de mensajes del servidor.
-     */
+	 * Hilo interno encargado de recibir y mostrar los mensajes enviados desde el servidor.
+	 * Ignora los mensajes de usuarios bloqueados y gestiona el mensaje de apagado del servidor.
+	 */
 	private class ChatClientListener implements Runnable {
 		
+		/**
+	     * Ejecuta el hilo de escucha de mensajes.
+	     * Recibe el ID, configura el cliente y muestra mensajes en consola.
+	     */
 		public void run() {
 			
 			try {
@@ -160,7 +196,8 @@ public class ChatClientImpl implements ChatClient {
 					
 					synchronized (System.out) {	// Bloquear la impresión para evitar superposición
 						
-						System.out.println(msg.getMessage());
+						System.out.println("\r" + msg.getMessage()); // \r borra línea actual
+						System.out.print("> ");
 						
 	                }
 					
@@ -168,13 +205,21 @@ public class ChatClientImpl implements ChatClient {
 					
 			} catch (IOException | ClassNotFoundException e) {
 				
-				 System.err.println("[ERR] Desconectado del servidor.");
-				 System.exit(0);  // Salir del programa
+				if (carryOn) {
+					
+				System.err.println("[ERR] Desconectado del servidor.");
+				System.exit(0);  // Salir del programa
+				}
 	        }
 			
 		}
 	}
 	
+	/**
+	 * Bloquea los mensajes de un usuario dado e informa al servidor.
+	 * 
+	 * @param username Nombre del usuario a bloquear.
+	 */
 	public void banUser(String username) {
 		
 	    if (!blockedUsers.contains(username)) {
@@ -193,6 +238,11 @@ public class ChatClientImpl implements ChatClient {
 	    
 	}
 	
+	/**
+	 * Desbloquea los mensajes de un usuario dado e informa al servidor.
+	 * 
+	 * @param username Nombre del usuario a desbloquear.
+	 */
 	public void unbanUser(String username) {
 	    if (blockedUsers.contains(username)) {
 	        blockedUsers.remove(username);
@@ -211,20 +261,34 @@ public class ChatClientImpl implements ChatClient {
 	}
 	
 	/**
-     * Método principal para ejecutar el cliente desde la consola.
-     */
+	 * Método principal para ejecutar el cliente desde consola usando Maven.
+	 * 
+	 * Uso esperado:
+	 * - mvn exec:java@run-client [servidor] nickname
+	 * 
+	 * @param args Argumentos de la línea de comandos (servidor y nickname).
+	 */
 	public static void main(String[] args) {
 		
-		if (args.length < 2) {
-			System.out.println("Uso: java es.ubu.lsi.client.ChatClientImpl <servidor> <nickname>");
-	        return;
-		}
-		
-
-		String server = args[0];
-	    String username = args[1];
+		String server = "localhost";  // Valor por defecto
+	    String username;
 	    int port = 1500;
 	    ChatMessage chatMessage;
+	    
+	    if (args.length == 1) {
+	    	
+	        username = args[0];
+	        
+	    } else if (args.length == 2) {
+	    	
+	        server = args[0];
+	        username = args[1];
+	        
+	    } else {
+	    	
+	        System.out.println("Uso: mvn exec:java@run-client [servidor] nickname");
+	        return;
+	    }
 	    
 	    ChatClientImpl client = new ChatClientImpl(server,port,username);
 	    

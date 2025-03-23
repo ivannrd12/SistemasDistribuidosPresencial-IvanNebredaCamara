@@ -15,18 +15,31 @@ import es.ubu.lsi.client.ChatClientImpl;
 import es.ubu.lsi.common.ChatMessage;
 
 /**
- * Implementación del servidor de chat basado en sockets TCP.
+ * Clase que representa el servidor de un sistema de chat basado en sockets TCP.
+ * Se encarga de aceptar conexiones de clientes, distribuir mensajes entre ellos
+ * y gestionar el apagado y eliminación de clientes conectados.
+ * 
+ * @author Ivan Nebreda Camara
  */
 public class ChatServerImpl implements ChatServer {
 
+	/** Puerto por defecto del servidor. */
 	private static final int DEFAULT_PORT = 1500;
+	/** Contador para asignar ID único a cada cliente. */
 	private static int clientId;
+	/** Formato de hora para el log. */
 	private static SimpleDateFormat sdf;
+	/** Puerto de escucha del servidor. */
 	private int port;
+	/** Estado del servidor (activo o no). */
 	private boolean alive;
+	/** Socket del servidor. */
 	private ServerSocket serverSocket;
+	/** Socket del cliente en espera de aceptar. */
 	private Socket clientSocket;
+	/** Mapa de clientes conectados (ID → hilo de cliente). */
 	private final Map<Integer, ServerThreadForClient> clients = new ConcurrentHashMap<>();
+	/** Mapa de nombres de usuario conectados (ID → nombre). */
 	private final Map<Integer, String> clientUsernames = new ConcurrentHashMap<>();
 	
 	
@@ -42,6 +55,9 @@ public class ChatServerImpl implements ChatServer {
 		
 	}
 	
+	/**
+	 * Inicia el servidor, acepta conexiones de clientes y lanza un hilo por cada uno.
+	 */
 	@Override
 	public void startup() {
 		
@@ -80,6 +96,9 @@ public class ChatServerImpl implements ChatServer {
 		
 	}
 
+	/**
+	 * Apaga el servidor de forma controlada, notificando a los clientes y cerrando sockets.
+	 */
 	@Override
 	public void shutdown() {
 		
@@ -116,7 +135,12 @@ public class ChatServerImpl implements ChatServer {
 		}
 		
 	}
-
+	
+	/**
+	 * Envía un mensaje a todos los clientes conectados.
+	 * 
+	 * @param message Mensaje a difundir.
+	 */
 	@Override
 	public void broadcast(ChatMessage message) {
 		
@@ -139,6 +163,11 @@ public class ChatServerImpl implements ChatServer {
 	    }
 	}
 
+	/**
+	 * Elimina un cliente desconectado de las estructuras internas y cierra su conexión.
+	 * 
+	 * @param id ID del cliente a eliminar.
+	 */
 	@Override
 	public void remove(int id) {
 		
@@ -163,18 +192,28 @@ public class ChatServerImpl implements ChatServer {
 	}
 	
 	/**
-     * Clase interna que maneja la comunicación con un cliente.
-     */
+	 * Hilo que gestiona la comunicación con un cliente específico.
+	 * Escucha los mensajes entrantes y los redirige al resto de clientes.
+	 */
 	private class ServerThreadForClient extends Thread {
 		
+		/** ID del cliente. */
 		private int id;
+		/** Nombre de usuario del cliente. */
 		private String username;
+		/** Puerto de conexión del cliente (no se usa actualmente). */
 		private int port;
+		/** Socket de conexión con el cliente. */
 		private Socket socket;
+		/** Flujo de entrada desde el cliente. */
 		private ObjectInputStream inputStream;
+		/** Flujo de salida hacia el cliente. */
 	    private ObjectOutputStream outputStream;
 		
-		
+	    /**
+	     * Ejecuta el ciclo de recepción de mensajes del cliente.
+	     * Gestiona logout, mensajes normales y bloqueos.
+	     */
 		public void run() {
 			
 			try {
@@ -246,6 +285,12 @@ public class ChatServerImpl implements ChatServer {
 		
 	}
 	
+	/**
+	 * Método principal. Arranca el servidor en un hilo independiente
+	 * y permite apagarlo manualmente mediante comandos por consola.
+	 * 
+	 * @param args Argumentos de la línea de comandos.
+	 */
 	public static void main(String[] args) {
 		
 		final ChatServerImpl server = new ChatServerImpl(1500); // Instanciar el servidor
@@ -263,7 +308,7 @@ public class ChatServerImpl implements ChatServer {
 		// Permitir apagar el servidor manualmente desde la consola
 	    Scanner scanner = new Scanner(System.in);
 	    System.out.println("Escribe 'shutdown' para apagar el servidor.");
-	    System.out.print("> ");
+	  
 	    while (scanner.hasNext()) {
 	        String command = scanner.nextLine();
 	        if (command.equalsIgnoreCase("shutdown")) {

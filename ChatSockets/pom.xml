@@ -7,8 +7,8 @@
   
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+		<maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
 	</properties>
 	
 	<build>
@@ -50,9 +50,8 @@
                         <configuration>
                             <mainClass>es.ubu.lsi.client.ChatClientImpl</mainClass>
                             <arguments>
-								<argument>localhost</argument>
-								<argument>juan</argument>
-							</arguments>
+                            	<argument>${exec.arguments}</argument>
+                        	</arguments>
                         </configuration>
                     </execution>
                 </executions>
