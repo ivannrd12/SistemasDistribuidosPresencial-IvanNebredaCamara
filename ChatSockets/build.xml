@@ -1,23 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="ChatApp" default="compile" basedir=".">
+<project name="ChatApp" default="javadoc" basedir=".">
 
 	<property name="src.dir" value="src/main/java"/>
-	<property name="build.dir" value="target/classes"/>
 	<property name="doc.dir" value="doc"/>
-	
-	<target name="clean">
-		
-		<delete dir="${build.dir}"/>
-		<delete dir="${doc.dir}"/>
-		
-	</target>
-	
-	<target name="compile">
-		
-		<mkdir dir="${build.dir}"/>
-		<javac srcdir="${src.dir}" destdir="${build.dir}" includeantruntime="false"/>
-		
-	</target>
 	
 	<target name="javadoc">
 		
@@ -26,18 +11,4 @@
 		   
 	</target>
 	
-	 <target name="run" depends="compile">
-	 	
-	 	<java classname="es.ubu.lsi.server.ChatServerImpl" fork="true">
-	 		
-	 		<classpath>
-	 			
-	 			<path location="${build.dir}"/>
-	 			
-	 		</classpath>
-	 		
-	 	</java>
-	 	
-	 </target>
-
 </project>
