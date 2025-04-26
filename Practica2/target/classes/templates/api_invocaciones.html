@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulaciones API de Terceros</title>
+</head>
+<body>
+<h1>Simulación de Invocaciones a API de Terceros</h1>
+
+<p>Prueba de invocación a errores simulados:</p>
+
+<div style="margin-top: 20px;">
+  <form action="#" method="get">
+    <button formaction="/invocar/archivo" type="submit">Simular error de lectura de archivo</button>
+    <button formaction="/invocar/basedatos" type="submit">Simular error de base de datos</button>
+    <button formaction="/invocar/pokemon" type="submit">Simular error llamando a API Pokémon</button>
+  </form>
+</div>
+
+<div style="margin-top: 30px;">
+  <a href="/">
+    <button>Volver a Inicio</button>
+  </a>
+</div>
+
+<div style="margin-top: 30px; color: blue;">
+  <h3>Respuesta recibida:</h3>
+  <div th:if="${resultado}">
+    <pre th:text="${resultado}" style="white-space: pre-wrap; background-color: #f0f0f0; padding: 10px; border-radius: 5px;"></pre>
+  </div>
+</div>
+</body>
+</html>
