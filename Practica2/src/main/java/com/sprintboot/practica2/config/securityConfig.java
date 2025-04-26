@@ -17,11 +17,12 @@ public class securityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/usuarios/lista").authenticated()  // protegemos esta ruta
+                        .requestMatchers("/usuarios/lista", "/api-invocaciones", "/invocar/**").authenticated()  // protegemos esta ruta
                         .anyRequest().permitAll()
                 )
                 .formLogin(form -> form
-                        .loginPage("/login")  // ruta personalizada para login
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/api-invocaciones", true)  // <- Esto redirige tras login
                         .permitAll()
                 )
                 .logout(logout -> logout.permitAll())
