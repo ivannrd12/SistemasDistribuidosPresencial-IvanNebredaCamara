@@ -18,8 +18,12 @@
 
   <div class="mb-3">
     <label class="form-label">Contraseña</label>
-    <input type="password" th:field="*{password}" class="form-control" required />
+    <input type="password"
+           th:field="*{password}"
+           class="form-control"
+           th:placeholder="${usuario.id} != null ? '(deja en blanco para mantener actual)' : ''" />
   </div>
+
 
   <div class="mb-3">
     <label class="form-label">Rol</label>
