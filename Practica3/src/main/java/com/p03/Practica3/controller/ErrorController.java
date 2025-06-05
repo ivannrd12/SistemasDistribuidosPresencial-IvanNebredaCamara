@@ -12,11 +12,11 @@ public class ErrorController {
 
     @GetMapping("/error/403")
     public String accesoDenegado() {
-        // Muestra una página sencilla que diga "No tienes permiso para ver esto."
+
         return "error/403";
     }
 
-    // (Opcional) Atrapa AccessDeniedException si se lanza desde Spring Security
+
     @ExceptionHandler(AccessDeniedException.class)
     public String handleAccessDenied(AccessDeniedException ex, HttpServletRequest request, Model model) {
         model.addAttribute("mensaje", "No tienes permiso para acceder a esta sección.");

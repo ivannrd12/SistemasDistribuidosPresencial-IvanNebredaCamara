@@ -34,20 +34,20 @@ public class AdminUsuarioController {
     @PostMapping("/guardar")
     public String guardar(@ModelAttribute("usuario") User usuario) {
         if (usuario.getId() != null) {
-            // -> estamos editando un usuario existente
+
             User existente = userRepository.findById(usuario.getId())
                     .orElseThrow(() -> new IllegalArgumentException("ID de usuario inválido"));
 
             if (usuario.getPassword() == null || usuario.getPassword().isBlank()) {
-                // El admin no escribió nueva contraseña: mantener el hash actual
+
                 usuario.setPassword(existente.getPassword());
             } else {
-                // El admin sí escribió algo en el campo password: cifrarlo con BCrypt
+
                 String nuevoHash = new BCryptPasswordEncoder().encode(usuario.getPassword());
                 usuario.setPassword(nuevoHash);
             }
         } else {
-            // -> es un nuevo usuario: la contraseña siempre se cifra
+
             String hash = new BCryptPasswordEncoder().encode(usuario.getPassword());
             usuario.setPassword(hash);
         }

@@ -46,27 +46,27 @@
             </ul>
         </div>
     </div>
-    <!-- Círculo grande superior izquierdo -->
+
     <div style="position: absolute; top: 20px; left: 20px; width: 140px; height: 140px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
 
-    <!-- Círculo grande inferior derecho -->
+
     <div style="position: absolute; bottom: -60px; right: -60px; width: 200px; height: 200px; background: rgba(255,255,255,0.15); border-radius: 50%;"></div>
 
-    <!-- Elipse mitad izquierda -->
+
     <div style="position: absolute; top: -20%; left: 35%; width: 140px; height: 140px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
 
-    <!-- Círculo medio en centro -->
+
     <div style="position: absolute; top: 75%; left: 30%; width: 80px; height: 80px; background: rgba(255,255,255,0.10); border-radius: 50%; transform: translate(-50%, -50%); z-index: 0;"></div>
     <div style="position: absolute; top: 0%; left: 75%; width: 80px; height: 80px; background: rgba(255,255,255,0.10); border-radius: 50%; transform: translate(-50%, -50%); z-index: 0;"></div>
-    <!-- Rectángulo inferior izquierdo -->
+
     <div style="position: absolute; bottom: 40px; left: 10%; width: 40px; height: 40px; background: rgba(255,255,255,0.10); transform: rotate(-15deg); border-radius: 50%;"></div>
     <div style="position: absolute; bottom: 40px; left: 1000px; width: 40px; height: 40px; background: rgba(255,255,255,0.10); transform: rotate(-15deg); border-radius: 50%;"></div>
-    <!-- Rectángulo vertical centro derecha -->
+
     <div style="position: absolute; top: 20%; right: 40%; width: 140px; height: 140px; background: rgba(255,255,255,0.08); border-radius: 50%;"></div>
 
     <div class="position-absolute top-0 start-0 m-3">
         <form th:action="@{/logout}" method="post">
-            <!-- Campo oculto con el token CSRF -->
+
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
             <button type="submit" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1">
@@ -94,7 +94,7 @@
     <section class="pt-2 pb-4" style="margin-top: -30px;">
         <div class="container">
             <div class="row">
-                <!-- Columna izquierda con calendario -->
+
                 <div class="col-lg-7">
                     <div class="bg-white p-3 rounded shadow-sm">
                         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -117,7 +117,7 @@
                             </div>
                         </div>
 
-                        <!-- Tabla tipo calendario -->
+
                         <div class="table-responsive">
                             <table class="table table-bordered text-center align-middle small">
                                 <thead class="table-light">
@@ -140,7 +140,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <!-- Repite para cada pista -->
+
                                 <tr>
                                     <th class="text-start">Padel 1</th>
                                     <td colspan="14"></td>
@@ -174,7 +174,6 @@
                             </table>
                         </div>
 
-                        <!-- Leyenda -->
                         <div class="d-flex gap-3 mt-3 small">
                             <span><span class="d-inline-block rounded border" style="width: 20px; height: 20px;"></span> disponible</span>
                             <span><span class="d-inline-block bg-secondary rounded" style="width: 20px; height: 20px;"></span> no disponible</span>
@@ -183,7 +182,7 @@
                     </div>
                 </div>
 
-                <!-- Columna derecha con horarios semanales -->
+
                 <div class="col-lg-5">
                     <div class="bg-white p-4 rounded shadow-sm ms-lg-3 mt-4 mt-lg-0">
                         <h4 class="fw-bold mb-4 text-primary text-center">Horarios de la Semana</h4>

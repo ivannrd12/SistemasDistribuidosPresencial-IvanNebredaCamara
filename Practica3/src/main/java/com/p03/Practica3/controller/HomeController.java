@@ -15,6 +15,6 @@ public class HomeController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         model.addAttribute("username", username);
-        return "home"; // este busca `home.html` en `src/main/resources/templates`
+        return "home";
     }
 }
