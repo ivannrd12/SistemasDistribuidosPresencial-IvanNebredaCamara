@@ -64,7 +64,7 @@ public class AdminUsuarioController {
         return "admin/formUsuario";
     }
 
-    @GetMapping("/eliminar/{id}")
+    @PostMapping("/eliminar/{id}")
     public String eliminar(@PathVariable Long id) {
         userRepository.deleteById(id);
         return "redirect:/admin/usuarios";

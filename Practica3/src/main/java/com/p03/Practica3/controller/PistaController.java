@@ -1,6 +1,7 @@
 package com.p03.Practica3.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import com.p03.Practica3.model.Pista;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/admin/pistas")
+@PreAuthorize("hasRole('ADMIN')")
 public class PistaController {
 
     @Autowired
@@ -40,7 +42,7 @@ public class PistaController {
         return "pistas/formPista";
     }
 
-    @GetMapping("/eliminar/{id}")
+    @PostMapping("/eliminar/{id}")
     public String eliminarPista(@PathVariable Long id) {
         pistaRepository.deleteById(id);
         return "redirect:/admin/pistas";
